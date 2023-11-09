@@ -8,68 +8,26 @@
    */
 
 const express = require("express");
-const bcrypt = require("bcryptjs");
-const jwt = require('jsonwebtoken');
 const connectDB = require("./db");
-const User = require("./models/User");
-
+const authenticate = require('./middleware/authenticate');
+const routes = require('./routes');
 const app = express();
+
 app.use(express.json());
+app.use(routes);
 
 app.use((err, _req, res, _next) => {
   console.log(err);
-  res.status(500).json({message: 'Error occurred in the server'});
+  const message = err.message ? err.message : 'Error occurred in the server';
+  const status = err.status ? err.status : 500;
+  res.status(status).json({message});
 });
 
-app.post("/register", async (req, res, next) => {
-  const { name, email, password } = req.body;
-  if (!name || !email || !password) {
-    return res.status(400).json({ message: "Invalid data" });
-  }
-  try {
-    let user = await User.findOne({ email });
-    if (user) {
-      return res.status(400).json({ message: "User already registered" });
-    }
-    user = new User({ name, email, password });
 
-    const salt = await bcrypt.genSalt(10);
-    const hash = await bcrypt.hash(password, salt);
-    user.password = hash;
 
-    await user.save();
-    res.status(201).json({ message: "User created successfully", user });
-  } catch (error) {
-    next(error);
-  }
-});
-
-app.post('/login', async (req, res, next) => {
-  const { email, password } = req.body;
-  try {
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(400).json({message: 'Invalid Credentials'});
-    }
-    const isMatched = await bcrypt.compare(password, user.password);
-    if (!isMatched) {
-      return res.status(400).json({message: 'Invalid Credentials'});
-    }
-    delete user._doc.password;
-
-    const token = jwt.sign(user._doc, 'secret-key', {expiresIn: '2h'});
-
-    res.status(200).json({message: 'Login Successful', token});
-  } catch (error) {
-    next(error);
-  }
-});
-
-app.get('/private', (req, res) => {
-  if (!req.headers.authorization) {
-    return res.status(401).json({message: 'Unauthorized'});
-  }
-  res.status(200).json({message: 'I am a private route'});
+app.get('/private', authenticate, (req, res) => {
+  console.log('This is the user', req.user);
+  return res.status(200).json({message: 'I am a private route'});
 });
 
 app.get('/public', (_req, res) => {

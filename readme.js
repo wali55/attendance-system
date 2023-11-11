@@ -33,4 +33,6 @@ Login process pseudo code
 - token = generate token using user info
 - return token
 - end
+
+JWT is an important topic
 */

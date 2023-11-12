@@ -35,4 +35,5 @@ Login process pseudo code
 - end
 
 JWT is an important topic
+Another day studying JWT and QA test for a software
 */
